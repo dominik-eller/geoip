@@ -1,0 +1,67 @@
+name: Packagist Publish
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  notify-packagist:
+    name: Create/Update package on Packagist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compose repository URL
+        id: vars
+        run: echo "REPO_URL=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" >> $GITHUB_OUTPUT
+
+      - name: Create package on Packagist (idempotent)
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        run: |
+          set -e
+          echo "Creating package for ${GITHUB_REPOSITORY} on Packagist (safe to ignore if it already exists)..."
+          # The create API returns 2xx on success; if it already exists it may return 406/422.
+          # We do not fail the workflow on non-2xx here; proceed to update.
+          set +e
+          RESP=$(curl -sS -X POST "https://packagist.org/api/packages" \
+            -u "${PACKAGIST_USERNAME}:${PACKAGIST_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"repository\":{\"url\":\"${{ steps.vars.outputs.REPO_URL }}\"}}" \
+            -w "\nHTTP_STATUS:%{http_code}\n")
+          CODE=$(echo "$RESP" | sed -n 's/^HTTP_STATUS://p')
+          BODY=$(echo "$RESP" | sed '/HTTP_STATUS:/d')
+          echo "Create response code: $CODE"
+          echo "Create response body: $BODY"
+          # do not fail even if 4xx/5xx
+          true
+
+      - name: Update package on Packagist
+        env:
+          PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+        run: |
+          set -e
+          echo "Triggering Packagist update (re-scan) for ${GITHUB_REPOSITORY}..."
+          RESP=$(curl -sS -X POST "https://packagist.org/api/update-package" \
+            -u "${PACKAGIST_USERNAME}:${PACKAGIST_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            -d "{\"repository\":{\"url\":\"${{ steps.vars.outputs.REPO_URL }}\"}}" \
+            -w "\nHTTP_STATUS:%{http_code}\n")
+          CODE=$(echo "$RESP" | sed -n 's/^HTTP_STATUS://p')
+          BODY=$(echo "$RESP" | sed '/HTTP_STATUS:/d')
+          echo "Update response code: $CODE"
+          echo "Update response body: $BODY"
+          if [ "$CODE" -ge 400 ]; then
+            echo "Packagist update API failed with status $CODE"
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "Packagist automation completed. Make sure repo secrets PACKAGIST_USERNAME and PACKAGIST_TOKEN are configured."
