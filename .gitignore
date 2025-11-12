@@ -1,0 +1,38 @@
+# Composer / PHP library ignores
+/vendor/
+/composer.lock
+/composer.phar
+
+# PHPUnit & coverage
+/.phpunit-cache/
+.phpunit.result.cache
+/coverage/
+/reports/
+
+# Build artifacts
+/build/
+/dist/
+/tmp/
+
+# OS/IDE/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Env & local overrides
+.env
+.env.local
+.env.*.local
+
+# Project-specific generated data
+/data/geotargets.csv
+/data/last_update.txt
+
+# Example app runtime files (keep sources under examples/)
+/examples/*.log
+/examples/.env
+/examples/.cache/

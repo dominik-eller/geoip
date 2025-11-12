@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Deller\GeoIP\GeoTargetsLookup;
+
+$csv = getenv('GEOTARGETS_CSV') ?: dirname(__DIR__) . '/data/geotargets.csv';
+
+$argvLoc = $argv[1] ?? null;
+if ($argvLoc === null) {
+    fwrite(STDERR, "Usage: geotargets-lookup <criteria_id>\n");
+    fwrite(STDERR, "  or set LOC env var: LOC=2267 geotargets-lookup\n");
+}
+$loc = $argvLoc ?? getenv('LOC');
+
+if (!$loc) {
+    fwrite(STDERR, "Missing criteria_id.\n");
+    exit(2);
+}
+
+try {
+    $lookup = new GeoTargetsLookup($csv);
+    $row = $lookup->findById($loc);
+    if ($row) {
+        fwrite(STDOUT, json_encode($row, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE) . "\n");
+        exit(0);
+    }
+    fwrite(STDOUT, json_encode(['error' => 'not_found', 'criteria_id' => (string)$loc], JSON_PRETTY_PRINT) . "\n");
+    exit(1);
+} catch (Throwable $e) {
+    fwrite(STDERR, "Lookup failed: {$e->getMessage()}\n");
+    exit(3);
+}

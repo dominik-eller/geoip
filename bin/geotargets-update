@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Deller\GeoIP\GeoTargetsUpdater;
+
+$targetDir = getenv('GEOTARGETS_DIR') ?: dirname(__DIR__) . '/data';
+$source    = getenv('GEOTARGETS_SOURCE') ?: GeoTargetsUpdater::DEFAULT_SOURCE_PAGE;
+
+$updater = new GeoTargetsUpdater($targetDir);
+
+try {
+    $csv = $updater->update($source);
+    fwrite(STDOUT, "Saved CSV to: $csv\n");
+    exit(0);
+} catch (Throwable $e) {
+    fwrite(STDERR, "Update failed: {$e->getMessage()}\n");
+    exit(1);
+}
