@@ -81,6 +81,60 @@ LOC=2267 vendor/bin/geotargets-lookup
 GEOTARGETS_CSV=/var/data/geo/geotargets.csv vendor/bin/geotargets-lookup 2267
 ```
 
+## WordPress Plugin
+
+Dieses Paket enthält ein WordPress-Plugin für eine einfache Integration.
+
+### Build (ZIP erstellen)
+Da das Plugin die Kern-Bibliothek nutzt, aber ohne Composer lauffähig sein soll, muss es "gebaut" werden. Dabei werden die notwendigen Dateien in ein installierbares ZIP-Archiv gepackt.
+
+```bash
+composer build-wp-plugin
+```
+Das Ergebnis liegt unter `build/deller-geoip-plugin.zip`.
+
+### Installation
+1. Erstelle das ZIP-Archiv wie oben beschrieben.
+2. Lade das ZIP-Archiv im WordPress-Adminbereich unter **Plugins -> Installieren -> Plugin hochladen** hoch.
+3. Alternativ: Kopiere den Inhalt des `wp-plugin` Verzeichnisses manuell in `wp-content/plugins/geoip` und stelle sicher, dass die Dateien aus `src/` ebenfalls im `src/` Ordner des Plugins liegen.
+4. Aktiviere das Plugin im WordPress-Adminbereich.
+
+### Features
+- **WP-CLI Command**: `wp geoip update` to refresh the GeoTargets data.
+- **WP-CLI Command**: `wp geoip lookup <id>` to check a specific ID.
+- **Helper Function**: Use `deller_geoip_lookup($id)` in your own plugins or themes.
+- **Data Storage**: The CSV data is stored in your WordPress uploads directory under `wp-content/uploads/geoip-data/`.
+- **Automatic Updates**: The plugin schedules a monthly WP-Cron event (`deller_geoip_update_event`) to keep the data fresh.
+
+### Manual Cron Trigger
+If you want to trigger the update via a real system cron job, you have several options:
+
+#### 1. Via Standalone PHP script (Recommended for Plesk/Standard Hosting)
+The plugin provides a dedicated script that can be called directly:
+```bash
+php wp-content/plugins/geoip/cron-update.php
+```
+This is the easiest way if you don't have WP-CLI installed.
+
+#### 2. Via WP-CLI
+```bash
+wp geoip update
+```
+
+#### 3. Via Action Hook
+Or hook into the action within your own code:
+```php
+do_action('deller_geoip_update_event');
+```
+
+### Example usage in code
+```php
+$data = deller_geoip_lookup(1004542);
+if ($data) {
+    echo "Location: " . $data['canonical_name'];
+}
+```
+
 ## Web endpoint example
 
 Create `public/geotarget.php` in your app:

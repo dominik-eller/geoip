@@ -28,7 +28,8 @@
   ],
   "scripts": {
     "test": "phpunit",
-    "tests": "phpunit"
+    "tests": "phpunit",
+    "build-wp-plugin": "php bin/build-wp-plugin.php"
   },
   "support": {
     "issues": "https://example.com/dominik-eller/geoip/issues"
