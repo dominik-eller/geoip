@@ -13,17 +13,28 @@ if (!class_exists('Deller_GeoIP_CLI')) {
         /**
          * Updates the GeoTargets CSV file from Google.
          *
+         * ## OPTIONS
+         *
+         * [--country=<country-code>]
+         * : Filter by country code (e.g. DE).
+         *
          * ## EXAMPLES
          *
          *     wp geoip update
+         *     wp geoip update --country=DE
          *
          * @when after_wp_load
          */
         public function update($args, $assoc_args) {
             WP_CLI::log('Starting GeoIP update...');
+            $country = $assoc_args['country'] ?? null;
 
             try {
                 $updater = Deller_GeoIP::get_instance()->get_updater();
+                if ($country) {
+                    $updater->setCountryFilter($country);
+                    WP_CLI::log("Filtering by country: $country");
+                }
                 $path = $updater->update();
                 WP_CLI::success("GeoTargets updated successfully: $path");
             } catch (\Exception $e) {

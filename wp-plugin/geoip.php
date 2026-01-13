@@ -66,10 +66,16 @@ if (!class_exists('Deller_GeoIP')) {
 
         /**
          * Run the update process
+         * 
+         * @param string|null $country Optional country code to filter (e.g. 'DE')
          */
-        public function run_update() {
+        public function run_update($country = null) {
             try {
-                $this->get_updater()->update();
+                $updater = $this->get_updater();
+                if ($country) {
+                    $updater->setCountryFilter($country);
+                }
+                $updater->update();
             } catch (\Exception $e) {
                 if (defined('WP_DEBUG') && WP_DEBUG) {
                     error_log('GeoIP Update Error: ' . $e->getMessage());

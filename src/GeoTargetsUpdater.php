@@ -19,6 +19,7 @@ class GeoTargetsUpdater
 
     private string $targetDir;
     private string $csvFilename;
+    private ?string $countryFilter = null;
 
     /**
      * @param string $targetDir Directory where CSV will be stored.
@@ -28,6 +29,15 @@ class GeoTargetsUpdater
     {
         $this->targetDir = rtrim($targetDir, '/');
         $this->csvFilename = $csvFilename;
+    }
+
+    /**
+     * Sets a country code to filter the CSV (e.g., 'DE').
+     */
+    public function setCountryFilter(?string $countryCode): self
+    {
+        $this->countryFilter = $countryCode ? strtoupper($countryCode) : null;
+        return $this;
     }
 
     /**
@@ -88,15 +98,7 @@ class GeoTargetsUpdater
                     if ($stream === false) {
                         continue;
                     }
-                    $out = @fopen($csvPath, 'wb');
-                    if ($out === false) {
-                        @fclose($stream);
-                        $zip->close();
-                        @unlink($tmpFile);
-                        throw new \RuntimeException("Failed to write CSV to $csvPath");
-                    }
-                    stream_copy_to_stream($stream, $out);
-                    fclose($out);
+                    $this->saveCsvStream($stream, $csvPath);
                     fclose($stream);
                     $extracted = true;
                     break;
@@ -108,10 +110,13 @@ class GeoTargetsUpdater
                 throw new \RuntimeException('No CSV file found inside the ZIP archive.');
             }
         } else {
-            if (!@copy($tmpFile, $csvPath)) {
+            $stream = @fopen($tmpFile, 'rb');
+            if ($stream === false) {
                 @unlink($tmpFile);
-                throw new \RuntimeException("Failed to save CSV to $csvPath");
+                throw new \RuntimeException("Failed to open downloaded file $tmpFile");
             }
+            $this->saveCsvStream($stream, $csvPath);
+            fclose($stream);
             @unlink($tmpFile);
         }
 
@@ -124,6 +129,39 @@ class GeoTargetsUpdater
     public function getCsvPath(): string
     {
         return $this->targetDir . '/' . $this->csvFilename;
+    }
+
+    /**
+     * Internal helper to save CSV stream with optional filtering.
+     *
+     * @param resource $inputStream
+     * @param string $csvPath
+     * @throws \RuntimeException
+     */
+    protected function saveCsvStream($inputStream, string $csvPath): void
+    {
+        $out = @fopen($csvPath, 'wb');
+        if ($out === false) {
+            throw new \RuntimeException("Failed to write CSV to $csvPath");
+        }
+
+        if ($this->countryFilter === null) {
+            stream_copy_to_stream($inputStream, $out);
+        } else {
+            // Read header
+            $header = fgetcsv($inputStream);
+            if ($header !== false) {
+                fputcsv($out, $header);
+                // The country code is usually at index 4 in Google Ads CSV
+                // Format: "Criteria ID","Name","Canonical Name","Parent ID","Country Code","Target Type","Status"
+                while (($row = fgetcsv($inputStream)) !== false) {
+                    if (isset($row[4]) && strtoupper($row[4]) === $this->countryFilter) {
+                        fputcsv($out, $row);
+                    }
+                }
+            }
+        }
+        fclose($out);
     }
 
     protected function getHtml(string $url): ?string

@@ -101,10 +101,12 @@ Das Ergebnis liegt unter `build/deller-geoip-plugin.zip`.
 
 ### Features
 - **WP-CLI Command**: `wp geoip update` to refresh the GeoTargets data.
+  - Optional: `wp geoip update --country=DE` to only download targets for a specific country (reduces file size significantly).
 - **WP-CLI Command**: `wp geoip lookup <id>` to check a specific ID.
 - **Helper Function**: Use `deller_geoip_lookup($id)` in your own plugins or themes.
 - **Data Storage**: The CSV data is stored in your WordPress uploads directory under `wp-content/uploads/geoip-data/`.
 - **Automatic Updates**: The plugin schedules a monthly WP-Cron event (`deller_geoip_update_event`) to keep the data fresh.
+  - Tip: You can hook into `deller_geoip_update_event` and pass a country code if you want the automated update to be filtered.
 
 ### Manual Cron Trigger
 If you want to trigger the update via a real system cron job, you have several options:
@@ -112,7 +114,11 @@ If you want to trigger the update via a real system cron job, you have several o
 #### 1. Via Standalone PHP script (Recommended for Plesk/Standard Hosting)
 The plugin provides a dedicated script that can be called directly:
 ```bash
+# Update all targets
 php wp-content/plugins/geoip/cron-update.php
+
+# Update only Germany (DE)
+php wp-content/plugins/geoip/cron-update.php DE
 ```
 This is the easiest way if you don't have WP-CLI installed.
 

@@ -5,7 +5,8 @@
  * This script can be called directly via PHP CLI to trigger the GeoIP update process.
  * It attempts to find and load wp-load.php to access WordPress functionality.
  *
- * Usage: php cron-update.php
+ * Usage: php cron-update.php [COUNTRY_CODE]
+ * Example: php cron-update.php DE
  */
 
 // Prevent web access for security
@@ -42,9 +43,15 @@ if (!class_exists('Deller_GeoIP')) {
 
 echo "Starting GeoIP update via standalone cron script...\n";
 
+$country_filter = $argv[1] ?? null;
+
 try {
     $geoip = Deller_GeoIP::get_instance();
     $updater = $geoip->get_updater();
+    if ($country_filter) {
+        echo "Filtering by country: $country_filter\n";
+        $updater->setCountryFilter($country_filter);
+    }
     $path = $updater->update();
     echo "Success: GeoTargets updated successfully: $path\n";
 } catch (\Exception $e) {

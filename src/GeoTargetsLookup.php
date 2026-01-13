@@ -41,9 +41,10 @@ class GeoTargetsLookup
                     'criteria_id'    => $row[0] ?? '',
                     'name'           => $row[1] ?? '',
                     'canonical_name' => $row[2] ?? '',
-                    'country_code'   => $row[3] ?? '',
-                    'target_type'    => $row[4] ?? '',
-                    'status'         => $row[5] ?? '',
+                    'parent_id'      => $row[3] ?? '',
+                    'country_code'   => $row[4] ?? '',
+                    'target_type'    => $row[5] ?? '',
+                    'status'         => $row[6] ?? '',
                 ];
                 break;
             }
